@@ -1,0 +1,12 @@
+---
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraMounts:
+      # mount docker lib to kind cluster
+      - hostPath: /var/lib/docker
+        containerPath: /docker/lib/
+      # mount docker socket to kind cluster
+      - hostPath: /var/run/docker.sock
+        containerPath: /docker/docker.sock

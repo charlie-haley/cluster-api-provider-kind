@@ -1,0 +1,14 @@
+namespace: capk-system
+
+namePrefix: capk-
+
+commonLabels:
+ cluster.x-k8s.io/provider: "infrastructure-kind"
+
+bases:
+- ../crd
+- ../rbac
+- ../manager
+
+patchesStrategicMerge:
+- manager_auth_proxy_patch.yaml

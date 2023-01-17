@@ -17,15 +17,27 @@ type kubeConfig struct {
 }
 
 // CreateCluster creates a Kind cluster
-func CreateCluster(scope *scope.ClusterScope) error {
+func CreateCluster(scope *scope.ClusterScope, kindConfig string) error {
 	provider := cluster.NewProvider()
 
-	// create the cluster
-	err := provider.Create(
-		scope.Cluster.ObjectMeta.Name,
-		cluster.CreateWithDisplayUsage(true),
-		cluster.CreateWithDisplaySalutation(true),
-	)
+	// check if kindconfig exists
+	var err error
+	if kindConfig == "" {
+		// create the cluster
+		err = provider.Create(
+			scope.Cluster.ObjectMeta.Name,
+			cluster.CreateWithDisplayUsage(true),
+			cluster.CreateWithDisplaySalutation(true),
+		)
+	} else {
+		// create cluster with kindconfig
+		err = provider.Create(
+			scope.Cluster.ObjectMeta.Name,
+			cluster.CreateWithRawConfig([]byte(kindConfig)),
+			cluster.CreateWithDisplayUsage(true),
+			cluster.CreateWithDisplaySalutation(true),
+		)
+	}
 	if err != nil {
 		return errors.Wrap(err, "failed to create kind cluster")
 	}

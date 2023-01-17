@@ -27,6 +27,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -55,6 +56,7 @@ type KindClusterReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kindclusters/finalizers,verbs=update
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;
 
 func (r *KindClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, resErr error) {
 	log := log.FromContext(ctx)
@@ -140,8 +142,18 @@ func (r *KindClusterReconciler) reconcileNormal(clusterScope *scope.ClusterScope
 		return ctrl.Result{}, err
 	}
 
+	var kindConfig string
+	if clusterScope.KindCluster.Spec.KindConfig != nil {
+		log.Info("Fetching KindCluster config map")
+		cfg, err := r.getKindConfig(clusterScope)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		kindConfig = *cfg
+	}
+
 	log.Info("Creating kind cluster")
-	err = kind.CreateCluster(clusterScope)
+	err = kind.CreateCluster(clusterScope, kindConfig)
 	if err != nil {
 		log.Error(err, "error creating kind cluster")
 	}
@@ -185,6 +197,31 @@ func (r *KindClusterReconciler) SetupWithManager(mgr ctrl.Manager, options contr
 		WithOptions(options).
 		For(&infrav1.KindCluster{}).
 		Complete(r)
+}
+
+// getKindConfig gets the Kind config map based on the reference in the KindCluster custom resource and returns the value as a string.
+func (r *KindClusterReconciler) getKindConfig(clusterScope *scope.ClusterScope) (*string, error) {
+	clusterScope.Log.Info("Fetching Kind ConfigMap")
+
+	namespace := clusterScope.KindCluster.Spec.KindConfig.Namespace
+	// if namespace is null, assume namespace of KindCluster
+	if namespace == "" {
+		namespace = clusterScope.KindCluster.ObjectMeta.Namespace
+	}
+	namespacedName := types.NamespacedName{
+		Name:      clusterScope.KindCluster.Spec.KindConfig.Name,
+		Namespace: namespace,
+	}
+
+	kindConfig := &corev1.ConfigMap{}
+	err := r.Get(clusterScope.Context, namespacedName, kindConfig)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+	}
+	cfg := kindConfig.Data[clusterScope.KindCluster.Spec.KindConfig.Key]
+	return &cfg, nil
 }
 
 // createCAPIKubeconfigSecret creates a secret containing the kubeconfig on the management cluster

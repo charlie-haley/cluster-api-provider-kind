@@ -49,6 +49,10 @@ type KindClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
+
+	// KindConfig is a reference to a ConfigMap containing Kind configuration.
+	// +optional
+	KindConfig *ConfigMapReference `json:"kindConfigRef,omitempty"`
 }
 
 // KindClusterStatus defines the observed state of KindCluster
@@ -63,6 +67,16 @@ type KindClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []KindCluster `json:"items"`
+}
+
+type ConfigMapReference struct {
+	// Namespace is the namespace of the config map you'd like to reference. Leave blank to use the namespace of the KindCluster.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+	// Name is the name of the config map you'd like to reference.
+	Name string `json:"name"`
+	// Key is the key in the config map relating to the Kind config.
+	Key string `json:"key"`
 }
 
 func init() {

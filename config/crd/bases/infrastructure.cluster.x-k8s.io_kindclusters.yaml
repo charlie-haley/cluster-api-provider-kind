@@ -9,6 +9,8 @@ metadata:
 spec:
   group: infrastructure.cluster.x-k8s.io
   names:
+    categories:
+    - cluster-api
     kind: KindCluster
     listKind: KindClusterList
     plural: kindclusters
@@ -68,9 +70,26 @@ spec:
                 - host
                 - port
                 type: object
-              nodeImage:
-                description: NodeImage is the Docker Image to use for Kind nodes
-                type: string
+              kindConfigRef:
+                description: KindConfig is a reference to a ConfigMap containing Kind
+                  configuration.
+                properties:
+                  key:
+                    description: Key is the key in the config map relating to the
+                      Kind config.
+                    type: string
+                  name:
+                    description: Name is the name of the config map you'd like to
+                      reference.
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the config map you'd
+                      like to reference. Leave blank to use the namespace of the KindCluster.
+                    type: string
+                required:
+                - key
+                - name
+                type: object
             type: object
           status:
             description: KindClusterStatus defines the observed state of KindCluster

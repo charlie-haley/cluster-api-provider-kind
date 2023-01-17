@@ -19,7 +19,7 @@ metadata:
   name: test-ha-cluster
 spec:
   kindConfigRef:
-    name: test-cluster-config
+    name: test-ha-cluster-config
     key: config
 ---
 apiVersion: v1
